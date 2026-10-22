@@ -1,28 +1,11 @@
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse
-from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import encryptor
+from app.database import create_tables, SessionDep
 from app.models import Url, UrlCreate, UrlPublic
 
 app = FastAPI()
-
-sqlite_file_name = "db.sqlite3"
-engine = create_engine(f"sqlite:///{sqlite_file_name}")
-
-
-def create_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session() -> Session:
-    with Session(engine) as session:
-        yield session
-
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 @app.on_event("startup")
