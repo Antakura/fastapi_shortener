@@ -30,13 +30,12 @@ def on_startup():
     create_tables()
 
 
-@app.post("/urls/", response_model=UrlPublic)
+@app.post("/urls/", response_model=UrlPublic, status_code=status.HTTP_201_CREATED)
 def create_url(url: UrlCreate, session: SessionDep):
     db_url = Url.model_validate(url)
     session.add(db_url)
     session.commit()
     session.refresh(db_url)
-    # TODO: add returning encrypted url
     return db_url
 
 
