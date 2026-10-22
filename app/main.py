@@ -1,10 +1,10 @@
-from fastapi import FastAPI, status, Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from hashids import Hashids
-from sqlmodel import create_engine, SQLModel, Session
 from typing import Annotated
 
-from app.config import get_settings
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.responses import RedirectResponse
+from sqlmodel import Session, SQLModel, create_engine
+
+from app.config import encryptor
 from app.models import Url, UrlCreate, UrlPublic
 
 app = FastAPI()
@@ -24,16 +24,6 @@ def get_session() -> Session:
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-encryptor = Hashids(salt=get_settings().SECRET_KEY, min_length=6)
-
-
-def encrypt_urls_id(long_url_id: int) -> str:
-    return encryptor.encode(long_url_id)
-
-
-def decrypt_hashed_url(hashed_url: str) -> int:
-    return encryptor.decode(hashed_url)
-
 
 @app.on_event("startup")
 def on_startup():
@@ -52,10 +42,17 @@ def create_url(url: UrlCreate, session: SessionDep):
 
 @app.get("/url/{short_url}", response_model=UrlPublic)
 def fetch_ful_url(short_url: str, session: SessionDep):
-    decrypted_id = decrypt_hashed_url(short_url)
-    url = session.get(Url, decrypted_id)
+    decoded = encryptor.decode(short_url)
+    if not decoded:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid short url"
+        )
+
+    url_id = decoded[0]
+    url = session.get(Url, url_id)
     if not url:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return RedirectResponse(
-        url=url.full_url, status_code=status.HTTP_302_FOUND
-    )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="URL not found"
+        )
+
+    return RedirectResponse(url=url.full_url, status_code=status.HTTP_302_FOUND)
