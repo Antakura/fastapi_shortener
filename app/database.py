@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import Depends
-
 from sqlmodel import Session, SQLModel, create_engine
 
 sqlite_file_name = "db.sqlite3"

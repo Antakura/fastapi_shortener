@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse
 
 from app.config import encryptor
-from app.database import create_tables, SessionDep
+from app.database import SessionDep, create_tables
 from app.models import Url, UrlCreate, UrlPublic
 
 app = FastAPI()
